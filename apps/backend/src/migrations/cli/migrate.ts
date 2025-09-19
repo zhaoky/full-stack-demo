@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { MigrationRunner } from '../core/MigrationRunner';
 import { MigrationGenerator } from '../core/MigrationGenerator';
 import { logger } from '@utils/logger';
-import { testDatabaseConnections, closeDatabaseConnections } from '@config/database';
+import { connectDatabases, disconnectDatabases } from '@config/database';
 import path from 'path';
 
 const program = new Command();
@@ -23,13 +23,13 @@ program
   .action(async () => {
     try {
       logger.info('🚀 开始执行迁移...');
-      await testDatabaseConnections();
+      await connectDatabases();
       await runner.migrate();
     } catch (error) {
       logger.error('❌ 迁移执行失败:', error);
       process.exit(1);
     } finally {
-      await closeDatabaseConnections();
+      await disconnectDatabases();
     }
   });
 
@@ -40,13 +40,13 @@ program
   .action(async () => {
     try {
       logger.info('🔄 开始回滚迁移...');
-      await testDatabaseConnections();
+      await connectDatabases();
       await runner.rollback();
     } catch (error) {
       logger.error('❌ 迁移回滚失败:', error);
       process.exit(1);
     } finally {
-      await closeDatabaseConnections();
+      await disconnectDatabases();
     }
   });
 
@@ -56,7 +56,7 @@ program
   .description('查看迁移状态')
   .action(async () => {
     try {
-      await testDatabaseConnections();
+      await connectDatabases();
       const status = await runner.status();
 
       console.log('\n📊 迁移状态:');
@@ -84,7 +84,7 @@ program
       logger.error('❌ 获取迁移状态失败:', error);
       process.exit(1);
     } finally {
-      await closeDatabaseConnections();
+      await disconnectDatabases();
     }
   });
 
@@ -221,14 +221,14 @@ program
   .action(async () => {
     try {
       logger.info('🔧 初始化迁移系统...');
-      await testDatabaseConnections();
+      await connectDatabases();
       await runner.initialize();
       logger.info('✅ 迁移系统初始化完成');
     } catch (error) {
       logger.error('❌ 初始化失败:', error);
       process.exit(1);
     } finally {
-      await closeDatabaseConnections();
+      await disconnectDatabases();
     }
   });
 
@@ -246,7 +246,7 @@ program
 
     try {
       logger.warn('🔄 重置迁移系统...');
-      await testDatabaseConnections();
+      await connectDatabases();
 
       const queryInterface = (await import('@config/database')).sequelize.getQueryInterface();
       await queryInterface.dropTable('schema_migrations');
@@ -257,7 +257,7 @@ program
       logger.error('❌ 重置失败:', error);
       process.exit(1);
     } finally {
-      await closeDatabaseConnections();
+      await disconnectDatabases();
     }
   });
 

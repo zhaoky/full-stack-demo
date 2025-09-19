@@ -72,7 +72,7 @@ export interface RefreshTokenResponse {
 
 // Express 扩展类型
 export interface AuthenticatedRequest extends Request {
-  user?: IUser;
+  user?: Omit<IUser, 'password'>;
 }
 
 // API 响应类型

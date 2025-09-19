@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { User } from '@models/User';
 import { logger } from '@utils/logger';
-import { testDatabaseConnections } from '@config/database';
+import { connectDatabases } from '@config/database';
 
 /**
  * 数据库种子数据脚本
@@ -10,7 +10,7 @@ async function seedDatabase(): Promise<void> {
   try {
     logger.info('🌱 Starting database seeding...');
 
-    await testDatabaseConnections();
+    await connectDatabases();
 
     // 清空现有数据（谨慎使用！）
     const clearData = process.argv.includes('--clear');

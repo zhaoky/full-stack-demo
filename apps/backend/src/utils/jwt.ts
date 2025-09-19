@@ -1,11 +1,10 @@
-import jwt, { type SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import type { IUser } from '../types/index';
 
 export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
-  type?: 'access' | 'refresh';
 }
 
 export interface TokenPair {
@@ -22,16 +21,21 @@ export class JWTUtil {
   private static readonly refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
   /**
-   * 生成访问令牌
+   * 创建令牌载荷
    */
-  static generateAccessToken(user: IUser): string {
-    const payload: TokenPayload = {
+  private static createPayload(user: IUser): TokenPayload {
+    return {
       userId: user.id,
       email: user.email,
       role: user.role,
-      type: 'access',
     };
+  }
 
+  /**
+   * 生成访问令牌
+   */
+  static generateAccessToken(user: IUser): string {
+    const payload = this.createPayload(user);
     return jwt.sign(payload, this.secret, { expiresIn: this.accessTokenExpiresIn } as any);
   }
 
@@ -39,13 +43,7 @@ export class JWTUtil {
    * 生成刷新令牌
    */
   static generateRefreshToken(user: IUser): string {
-    const payload: TokenPayload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      type: 'refresh',
-    };
-
+    const payload = this.createPayload(user);
     return jwt.sign(payload, this.refreshSecret, { expiresIn: this.refreshTokenExpiresIn } as any);
   }
 
@@ -66,11 +64,7 @@ export class JWTUtil {
    */
   static verifyAccessToken(token: string): TokenPayload {
     try {
-      const payload = jwt.verify(token, this.secret) as TokenPayload;
-      if (payload.type !== 'access') {
-        throw new Error('Invalid token type');
-      }
-      return payload;
+      return jwt.verify(token, this.secret) as TokenPayload;
     } catch (error) {
       throw new Error('Invalid or expired access token');
     }
@@ -81,35 +75,9 @@ export class JWTUtil {
    */
   static verifyRefreshToken(token: string): TokenPayload {
     try {
-      const payload = jwt.verify(token, this.refreshSecret) as TokenPayload;
-      if (payload.type !== 'refresh') {
-        throw new Error('Invalid token type');
-      }
-      return payload;
+      return jwt.verify(token, this.refreshSecret) as TokenPayload;
     } catch (error) {
       throw new Error('Invalid or expired refresh token');
-    }
-  }
-
-  /**
-   * 验证任意令牌（兼容旧版本）
-   */
-  static verifyToken(token: string): TokenPayload {
-    try {
-      // 先尝试作为访问令牌验证
-      return this.verifyAccessToken(token);
-    } catch {
-      try {
-        // 如果失败，尝试作为刷新令牌验证
-        return this.verifyRefreshToken(token);
-      } catch {
-        // 最后尝试用旧的密钥验证（向后兼容）
-        try {
-          return jwt.verify(token, this.secret) as TokenPayload;
-        } catch (error) {
-          throw new Error('Invalid or expired token');
-        }
-      }
     }
   }
 

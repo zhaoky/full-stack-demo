@@ -1,6 +1,6 @@
 import type { Application } from 'express';
 import type { Server } from 'http';
-import { testDatabaseConnections, closeDatabaseConnections } from './database';
+import { connectDatabases, disconnectDatabases } from './database';
 import { logger } from '@utils/logger';
 import { appConfig } from './app';
 
@@ -16,7 +16,7 @@ export class ServerManager {
   async start(app: Application): Promise<void> {
     try {
       // 测试数据库连接
-      await testDatabaseConnections();
+      await connectDatabases();
 
       // 启动服务器
       this.server = app.listen(appConfig.port, () => {
@@ -52,7 +52,7 @@ export class ServerManager {
         logger.info('HTTP 服务器已关闭');
 
         try {
-          await closeDatabaseConnections();
+          await disconnectDatabases();
           logger.info('数据库连接已关闭');
           process.exit(0);
         } catch (error) {
@@ -86,7 +86,7 @@ export class ServerManager {
     process.on('unhandledRejection', (reason, promise) => {
       logger.error('未处理的拒绝:', promise, '原因:', reason);
       process.exit(1);
-    });-
+    });
   }
 
   /**
@@ -96,6 +96,6 @@ export class ServerManager {
     if (this.server) {
       this.server.close();
     }
-    await closeDatabaseConnections();
+    await disconnectDatabases();
   }
 }

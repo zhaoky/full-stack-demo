@@ -1,76 +1,68 @@
-import type { Response, NextFunction } from 'express';
+import type { Response } from 'express';
 import { UserService } from '@services/userService';
 import { ApiResponseUtil } from '@utils/apiResponse';
 import { asyncHandler } from '@middleware/errorHandler';
 import { logger } from '@utils/logger';
 import type { PaginationQuery } from '@shared/types';
-import type { Request } from 'express';
+import type { AuthenticatedRequest } from '../types/index';
 
-// 扩展Request接口以包含认证用户信息
-interface AuthenticatedRequest extends Request {
-  user?: any;
-}
+/**
+ * 检查用户是否有权限操作目标用户
+ */
+const canAccessUser = (currentUser: any, targetUserId: string): boolean => {
+  return currentUser?.id === targetUserId || currentUser?.role === 'admin';
+};
+
+/**
+ * 检查管理员权限
+ */
+const isAdmin = (user: any): boolean => {
+  return user?.role === 'admin';
+};
 
 export class UserController {
   /**
    * 用户注册
    */
   static register = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userData = req.body;
-    const user = await UserService.createUser(userData);
-
+    const user = await UserService.createUser(req.body);
     logger.info(`用户已注册: ${user.email}`);
-    ApiResponseUtil.created(res, '用户注册成功', user);
+    ApiResponseUtil.created(res, user, '用户注册成功');
   });
 
   /**
    * 用户登录
    */
   static login = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const loginData = req.body;
-    const authResponse = await UserService.loginUser(loginData);
-
+    const authResponse = await UserService.loginUser(req.body);
     logger.info(`用户已登录: ${authResponse.user.email}`);
-    ApiResponseUtil.success(res, '登录成功', authResponse);
+    ApiResponseUtil.ok(res, authResponse, '登录成功');
   });
 
   /**
    * 刷新访问令牌
    */
   static refreshToken = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const refreshTokenData = req.body;
-    const tokenResponse = await UserService.refreshToken(refreshTokenData);
-
-    logger.info('令牌已刷新');
-    ApiResponseUtil.success(res, '令牌刷新成功', tokenResponse);
+    const tokenResponse = await UserService.refreshToken(req.body);
+    ApiResponseUtil.ok(res, tokenResponse, '令牌刷新成功');
   });
 
   /**
    * 用户登出
    */
   static logout = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) {
-      ApiResponseUtil.unauthorized(res, '用户未认证');
-      return;
-    }
-
-    await UserService.logout(req.user.id);
-
-    logger.info(`用户已登出: ${req.user.email}`);
-    ApiResponseUtil.success(res, '登出成功');
+    const { user } = req;
+    await UserService.logout(user!.id);
+    logger.info(`用户已登出: ${user!.email}`);
+    ApiResponseUtil.ok(res, undefined, '登出成功');
   });
 
   /**
    * 获取当前用户信息
    */
   static getCurrentUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) {
-      ApiResponseUtil.unauthorized(res, '用户未认证');
-      return;
-    }
-
-    const user = await UserService.getUserById(req.user.id);
-    ApiResponseUtil.success(res, '用户信息已获取', user);
+    const user = await UserService.getUserById(req.user!.id);
+    ApiResponseUtil.ok(res, user, '用户信息已获取');
   });
 
   /**
@@ -78,9 +70,8 @@ export class UserController {
    */
   static getUsers = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const query = req.query as unknown as PaginationQuery;
-    const users = await UserService.getUsers(query);
-
-    ApiResponseUtil.paginated(res, users.data, users.pagination.page, users.pagination.limit, users.pagination.total, '用户列表获取成功');
+    const { data, pagination } = await UserService.getUsers(query);
+    ApiResponseUtil.paginated(res, data, pagination.page, pagination.limit, pagination.total, '用户列表获取成功');
   });
 
   /**
@@ -88,9 +79,12 @@ export class UserController {
    */
   static getUserById = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
+    if (!id) {
+      ApiResponseUtil.validationError(res, '用户ID不能为空');
+      return;
+    }
     const user = await UserService.getUserById(id);
-
-    ApiResponseUtil.success(res, '用户获取成功', user);
+    ApiResponseUtil.ok(res, user, '用户获取成功');
   });
 
   /**
@@ -98,18 +92,19 @@ export class UserController {
    */
   static updateUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const updateData = req.body;
+    if (!id) {
+      ApiResponseUtil.validationError(res, '用户ID不能为空');
+      return;
+    }
 
-    // 用户只能更新自己的信息（除非是管理员）
-    if (req.user?.id !== id && req.user?.role !== 'admin') {
+    if (!canAccessUser(req.user, id)) {
       ApiResponseUtil.forbidden(res, '您只能更新自己的资料');
       return;
     }
 
-    const user = await UserService.updateUser(id, updateData);
-
+    const user = await UserService.updateUser(id, req.body);
     logger.info(`用户已更新: ${user.email}`);
-    ApiResponseUtil.success(res, '用户更新成功', user);
+    ApiResponseUtil.ok(res, user, '用户更新成功');
   });
 
   /**
@@ -117,34 +112,29 @@ export class UserController {
    */
   static deleteUser = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
+    if (!id) {
+      ApiResponseUtil.validationError(res, '用户ID不能为空');
+      return;
+    }
 
-    // 用户不能删除自己
-    if (req.user?.id === id) {
+    if (req.user!.id === id) {
       ApiResponseUtil.forbidden(res, '您不能删除自己的账户');
       return;
     }
 
     await UserService.deleteUser(id);
-
-    logger.info(`用户被管理员删除: ${req.user?.email}`);
-    ApiResponseUtil.success(res, '用户删除成功');
+    logger.info(`用户被管理员删除: ${req.user!.email}`);
+    ApiResponseUtil.ok(res, undefined, '用户删除成功');
   });
 
   /**
    * 更改密码
    */
   static changePassword = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) {
-      ApiResponseUtil.unauthorized(res, '用户未认证');
-      return;
-    }
-
     const { currentPassword, newPassword } = req.body;
-
-    await UserService.changePassword(req.user.id, currentPassword, newPassword);
-
-    logger.info(`用户密码已更改: ${req.user.email}`);
-    ApiResponseUtil.success(res, '密码修改成功');
+    await UserService.changePassword(req.user!.id, currentPassword, newPassword);
+    logger.info(`用户密码已更改: ${req.user!.email}`);
+    ApiResponseUtil.ok(res, undefined, '密码修改成功');
   });
 
   /**
@@ -152,32 +142,31 @@ export class UserController {
    */
   static toggleUserStatus = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
+    if (!id) {
+      ApiResponseUtil.validationError(res, '用户ID不能为空');
+      return;
+    }
 
-    // 用户不能停用自己
-    if (req.user?.id === id) {
+    if (req.user!.id === id) {
       ApiResponseUtil.forbidden(res, '您不能修改自己的账户状态');
       return;
     }
 
     const user = await UserService.toggleUserStatus(id);
-
-    logger.info(`用户状态被管理员切换: ${req.user?.email}`);
-    ApiResponseUtil.success(res, '用户状态更新成功', user);
+    logger.info(`用户状态被管理员切换: ${req.user!.email}`);
+    ApiResponseUtil.ok(res, user, '用户状态更新成功');
   });
 
   /**
    * 获取用户统计信息
    */
   static getUserStats = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    // 这里可以添加获取用户统计信息的逻辑
-    // 例如：总用户数、活跃用户数、新注册用户数等
+    // TODO: 实现 UserService.getUserStats 方法
     const stats = {
       totalUsers: 0,
       activeUsers: 0,
       newUsersToday: 0,
-      // 可以从 UserService 中添加相应的方法来获取这些统计信息
     };
-
-    ApiResponseUtil.success(res, '用户统计信息已获取', stats);
+    ApiResponseUtil.ok(res, stats, '用户统计信息已获取');
   });
 }

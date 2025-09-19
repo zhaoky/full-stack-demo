@@ -1,41 +1,59 @@
 import type { Response } from 'express';
-import type { ApiResponse, PaginatedResponse } from '@types/index';
+import type { ApiResponse, PaginatedResponse } from '../types/index';
 
 export class ApiResponseUtil {
-  /**
-   * 发送成功响应
-   */
-  static success<T>(res: Response, message: string = 'Success', data?: T, statusCode: number = 200): Response<ApiResponse<T>> {
-    const response: ApiResponse<T> = {
-      success: true,
+  private static respond<T>(res: Response, success: boolean, statusCode: number, message: string, data?: T, error?: string): Response<ApiResponse<T>> {
+    return res.status(statusCode).json({
+      success,
       message,
       data,
-      timestamp: new Date().toISOString(),
-    };
-
-    return res.status(statusCode).json(response);
-  }
-
-  /**
-   * 发送错误响应
-   */
-  static error(res: Response, message: string = 'Internal Server Error', error?: string, statusCode: number = 500): Response<ApiResponse> {
-    const response: ApiResponse = {
-      success: false,
-      message,
       error,
       timestamp: new Date().toISOString(),
-    };
-
-    return res.status(statusCode).json(response);
+    });
   }
 
-  /**
-   * 发送分页响应
-   */
-  static paginated<T>(res: Response, data: T[], page: number, limit: number, total: number, message: string = 'Data retrieved successfully'): Response<ApiResponse<PaginatedResponse<T>>> {
-    const totalPages = Math.ceil(total / limit);
+  static ok<T>(res: Response, data?: T, message = 'Success'): Response<ApiResponse<T>> {
+    return this.respond(res, true, 200, message, data);
+  }
 
+  static created<T>(res: Response, data?: T, message = 'Created'): Response<ApiResponse<T>> {
+    return this.respond(res, true, 201, message, data);
+  }
+
+  static noContent(res: Response): Response {
+    return res.status(204).send();
+  }
+
+  static badRequest(res: Response, message = 'Bad Request', error?: string): Response<ApiResponse> {
+    return this.respond(res, false, 400, message, undefined, error);
+  }
+
+  static unauthorized(res: Response, message = 'Unauthorized'): Response<ApiResponse> {
+    return this.respond(res, false, 401, message);
+  }
+
+  static forbidden(res: Response, message = 'Forbidden'): Response<ApiResponse> {
+    return this.respond(res, false, 403, message);
+  }
+
+  static notFound(res: Response, message = 'Not Found'): Response<ApiResponse> {
+    return this.respond(res, false, 404, message);
+  }
+
+  static conflict(res: Response, message = 'Conflict'): Response<ApiResponse> {
+    return this.respond(res, false, 409, message);
+  }
+
+  static validationError(res: Response, message = 'Validation Error', errors?: any): Response<ApiResponse> {
+    return this.respond(res, false, 422, message, undefined, errors);
+  }
+
+  static serverError(res: Response, message = 'Internal Server Error', error?: string): Response<ApiResponse> {
+    return this.respond(res, false, 500, message, undefined, error);
+  }
+
+  static paginated<T>(res: Response, data: T[], page: number, limit: number, total: number, message = 'Success'): Response<ApiResponse<PaginatedResponse<T>>> {
+    const totalPages = Math.ceil(total / limit);
     const paginatedData: PaginatedResponse<T> = {
       data,
       pagination: {
@@ -47,56 +65,6 @@ export class ApiResponseUtil {
         hasPrev: page > 1,
       },
     };
-
-    return this.success(res, message, paginatedData);
-  }
-
-  /**
-   * 发送创建成功响应
-   */
-  static created<T>(res: Response, message: string = 'Resource created successfully', data?: T): Response<ApiResponse<T>> {
-    return this.success(res, message, data, 201);
-  }
-
-  /**
-   * 发送无内容响应
-   */
-  static noContent(res: Response): Response {
-    return res.status(204).send();
-  }
-
-  /**
-   * 发送未找到响应
-   */
-  static notFound(res: Response, message: string = 'Resource not found'): Response<ApiResponse> {
-    return this.error(res, message, undefined, 404);
-  }
-
-  /**
-   * 发送未授权响应
-   */
-  static unauthorized(res: Response, message: string = 'Unauthorized access'): Response<ApiResponse> {
-    return this.error(res, message, undefined, 401);
-  }
-
-  /**
-   * 发送禁止访问响应
-   */
-  static forbidden(res: Response, message: string = 'Access forbidden'): Response<ApiResponse> {
-    return this.error(res, message, undefined, 403);
-  }
-
-  /**
-   * 发送验证错误响应
-   */
-  static validationError(res: Response, message: string = 'Validation failed', errors?: any): Response<ApiResponse> {
-    return this.error(res, message, errors, 422);
-  }
-
-  /**
-   * 发送冲突响应
-   */
-  static conflict(res: Response, message: string = 'Resource conflict'): Response<ApiResponse> {
-    return this.error(res, message, undefined, 409);
+    return this.ok(res, paginatedData, message);
   }
 }

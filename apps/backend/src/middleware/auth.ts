@@ -5,35 +5,53 @@ import { ApiResponseUtil } from '@utils/apiResponse';
 import { logger } from '@utils/logger';
 import type { AuthenticatedRequest, UserRole } from '../types/index';
 
+const BEARER_PREFIX = 'Bearer ';
+
+/**
+ * 从请求头中提取 JWT token
+ */
+const extractToken = (authHeader?: string): string | null => {
+  if (!authHeader?.startsWith(BEARER_PREFIX)) {
+    return null;
+  }
+  return authHeader.substring(BEARER_PREFIX.length);
+};
+
+/**
+ * 根据 token 获取用户信息
+ */
+const getUserFromToken = async (token: string) => {
+  const payload = JWTUtil.verifyAccessToken(token);
+  const user = await User.findByPk(payload.userId);
+
+  if (!user?.get('isActive')) {
+    return null;
+  }
+
+  return user.toJSON();
+};
+
 /**
  * 认证中间件 - 验证 JWT token
  */
 export const authenticate = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req.headers.authorization);
 
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (!token) {
       ApiResponseUtil.unauthorized(res, '需要访问令牌');
       return;
     }
 
-    const token = authHeader.substring(7); // 移除 'Bearer ' 前缀
+    const user = await getUserFromToken(token);
 
-    // 验证访问令牌
-    const payload = JWTUtil.verifyAccessToken(token);
-
-    // 查找用户
-    const user = await User.findByPk(payload.userId);
-
-    if (!user || !user.get('isActive')) {
+    if (!user) {
       ApiResponseUtil.unauthorized(res, '无效令牌或用户未找到');
       return;
     }
 
-    // 将用户信息添加到请求对象
-    req.user = user.toJSON() as any;
-
-    logger.debug(`用户 ${req.user?.email} 认证成功`);
+    req.user = user;
+    logger.debug(`用户 ${user.email} 认证成功`);
     next();
   } catch (error) {
     logger.error('认证错误:', error);
@@ -65,24 +83,17 @@ export const authorize = (...roles: UserRole[]) => {
  */
 export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractToken(req.headers.authorization);
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      next();
-      return;
-    }
-
-    const token = authHeader.substring(7);
-    const payload = JWTUtil.verifyAccessToken(token);
-    const user = await User.findByPk(payload.userId);
-
-    if (user && user.get('isActive')) {
-      req.user = user.toJSON() as any;
+    if (token) {
+      const user = await getUserFromToken(token);
+      if (user) {
+        req.user = user;
+      }
     }
 
     next();
   } catch (error) {
-    // 可选认证失败时不阻止请求，继续处理
     logger.debug('可选认证失败:', error);
     next();
   }

@@ -32,17 +32,21 @@ const developmentFormat = winston.format.combine(
 
 const productionFormat = winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston.format.errors({ stack: true }), winston.format.json());
 
+// 获取环境变量，默认为 development
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isProduction = nodeEnv === 'production';
+
 // 创建传输器
 const transports: winston.transport[] = [
   // 控制台输出
   new winston.transports.Console({
-    level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
-    format: process.env.NODE_ENV === 'production' ? productionFormat : developmentFormat,
+    level: isProduction ? 'warn' : 'debug',
+    format: isProduction ? productionFormat : developmentFormat,
   }),
 ];
 
 // 生产环境添加文件日志
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   const logDir = path.join(process.cwd(), 'logs');
 
   transports.push(
@@ -67,7 +71,7 @@ if (process.env.NODE_ENV === 'production') {
 // 创建 logger 实例
 export const logger = winston.createLogger({
   levels: logLevels,
-  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
   transports,
   exitOnError: false,
 });

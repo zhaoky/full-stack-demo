@@ -21,25 +21,9 @@ export const sequelize = new Sequelize({
   define: {
     timestamps: true,
     underscored: true,
-    paranoid: true, // 软删除
+    paranoid: true,
   },
 });
-
-// MongoDB 配置 (使用 Mongoose ODM)
-export const connectMongoDB = async (): Promise<void> => {
-  try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mongodb_demo';
-    await mongoose.connect(mongoUri, {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-    console.log('✅ MongoDB 连接成功');
-  } catch (error) {
-    console.error('❌ MongoDB 连接错误:', error);
-    process.exit(1);
-  }
-};
 
 // Redis 配置
 export const redisClient: RedisClientType = createClient({
@@ -50,48 +34,113 @@ export const redisClient: RedisClientType = createClient({
   ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
 });
 
-export const connectRedis = async (): Promise<void> => {
-  try {
-    await redisClient.connect();
-    console.log('✅ Redis 连接成功');
-  } catch (error) {
-    console.error('❌ Redis 连接错误:', error);
-    process.exit(1);
+// 数据库连接器类型
+interface DatabaseConnector {
+  name: string;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  isConnected: () => boolean;
+}
+
+// 数据库连接器定义
+const databases: DatabaseConnector[] = [
+  {
+    name: 'MySQL',
+    connect: async () => {
+      await sequelize.authenticate();
+    },
+    disconnect: async () => {
+      await sequelize.close();
+    },
+    isConnected: () => {
+      try {
+        return sequelize.connectionManager && (sequelize.connectionManager as any).pool !== null;
+      } catch {
+        return false;
+      }
+    },
+  },
+  {
+    name: 'MongoDB',
+    connect: async () => {
+      const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mongodb_demo';
+      await mongoose.connect(mongoUri, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      });
+    },
+    disconnect: async () => {
+      if (mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close();
+      }
+    },
+    isConnected: () => mongoose.connection.readyState === 1,
+  },
+  {
+    name: 'Redis',
+    connect: async () => {
+      if (!redisClient.isOpen) {
+        await redisClient.connect();
+      }
+    },
+    disconnect: async () => {
+      if (redisClient.isOpen) {
+        await redisClient.quit();
+      }
+    },
+    isConnected: () => redisClient.isOpen,
+  },
+];
+
+// 连接所有数据库
+export const connectDatabases = async (): Promise<void> => {
+  const results = await Promise.allSettled(
+    databases.map(async (db) => {
+      if (!db.isConnected()) {
+        await db.connect();
+      }
+      console.log(`✅ ${db.name} 连接成功`);
+      return db.name;
+    })
+  );
+
+  const failed = results
+    .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+    .map((result, index) => {
+      const dbName = databases[index]?.name || 'Unknown';
+      console.error(`❌ ${dbName} 连接失败:`, result.reason);
+      return dbName;
+    });
+
+  if (failed.length > 0) {
+    throw new Error(`数据库连接失败: ${failed.join(', ')}`);
   }
+
+  console.log('✅ 所有数据库连接已建立');
 };
 
-// 测试所有数据库连接
-export const testDatabaseConnections = async (): Promise<void> => {
-  try {
-    // 测试 MySQL 连接
-    await sequelize.authenticate();
-    console.log('✅ MySQL 连接已成功建立');
+// 断开所有数据库连接
+export const disconnectDatabases = async (): Promise<void> => {
+  const results = await Promise.allSettled(
+    databases.map(async (db) => {
+      await db.disconnect();
+      console.log(`✅ ${db.name} 连接已关闭`);
+      return db.name;
+    })
+  );
 
-    // 测试 MongoDB 连接
-    if (mongoose.connection.readyState !== 1) {
-      await connectMongoDB();
-    }
+  const failed = results
+    .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+    .map((result, index) => {
+      const dbName = databases[index]?.name || 'Unknown';
+      console.error(`❌ ${dbName} 关闭失败:`, result.reason);
+      return dbName;
+    });
 
-    // 测试 Redis 连接
-    if (!redisClient.isOpen) {
-      await connectRedis();
-    }
-
-    console.log('✅ 所有数据库连接已建立');
-  } catch (error) {
-    console.error('❌ 无法连接到数据库:', error);
-    throw error;
-  }
-};
-
-// 优雅关闭数据库连接
-export const closeDatabaseConnections = async (): Promise<void> => {
-  try {
-    await sequelize.close();
-    await mongoose.connection.close();
-    await redisClient.quit();
-    console.log('✅ 所有数据库连接已关闭');
-  } catch (error) {
-    console.error('❌ 关闭数据库连接时出错:', error);
+  if (failed.length === 0) {
+    console.log('✅ 所有数据库连接已成功关闭');
+  } else {
+    console.warn(`⚠️ 部分数据库连接关闭时出现问题: ${failed.join(', ')}`);
   }
 };

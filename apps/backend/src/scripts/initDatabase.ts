@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { sequelize, testDatabaseConnections } from '@config/database';
+import { sequelize, connectDatabases } from '@config/database';
 import { User } from '@models/User';
 import { logger } from '@utils/logger';
 import bcrypt from 'bcryptjs';
@@ -12,7 +12,7 @@ async function initDatabase(): Promise<void> {
     logger.info('🔄 Starting database initialization...');
 
     // 测试数据库连接
-    await testDatabaseConnections();
+    await connectDatabases();
 
     // 同步数据库表结构
     await sequelize.sync({ force: false }); // 设置为 true 会删除现有表
