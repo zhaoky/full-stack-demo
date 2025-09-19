@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Database services (same as production but with different settings)
+  mysql:
+    image: mysql:8.0
+    container_name: fullstack-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: devpassword
+      MYSQL_DATABASE: fullstack_dev
+      MYSQL_USER: devuser
+      MYSQL_PASSWORD: devpassword
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    networks:
+      - fullstack-dev-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: fullstack-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: devpassword
+      MONGO_INITDB_DATABASE: fullstack_dev
+    volumes:
+      - mongodb_dev_data:/data/db
+    ports:
+      - '27017:27017'
+    networks:
+      - fullstack-dev-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: fullstack-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - '6379:6379'
+    networks:
+      - fullstack-dev-network
+
+  # Application services in development mode
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: development
+    container_name: fullstack-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: devuser
+      MYSQL_PASSWORD: devpassword
+      MYSQL_DATABASE: fullstack_dev
+      MONGODB_URI: mongodb://root:devpassword@mongodb:27017/fullstack_dev?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: dev-jwt-secret-key
+      JWT_EXPIRES_IN: 7d
+      BCRYPT_ROUNDS: 8
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/backend/node_modules
+      - /app/packages/shared-types/node_modules
+      - /app/packages/shared-utils/node_modules
+      - /app/packages/shared-config/node_modules
+    ports:
+      - '3000:3000'
+      - '9229:9229' # Debug port
+    depends_on:
+      - mysql
+      - mongodb
+      - redis
+    networks:
+      - fullstack-dev-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      target: development
+    container_name: fullstack-frontend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/frontend/node_modules
+      - /app/packages/shared-types/node_modules
+      - /app/packages/shared-utils/node_modules
+      - /app/packages/shared-config/node_modules
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+    networks:
+      - fullstack-dev-network
+
+volumes:
+  mysql_dev_data:
+    name: fullstack_mysql_dev_data
+  mongodb_dev_data:
+    name: fullstack_mongodb_dev_data
+  redis_dev_data:
+    name: fullstack_redis_dev_data
+
+networks:
+  fullstack-dev-network:
+    name: fullstack-dev-network
+    driver: bridge

@@ -1,0 +1,30 @@
+{
+  "name": "@shared/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for the full-stack application",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "private": true,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rimraf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "tsup": "^8.2.4",
+    "typescript": "^5.5.4",
+    "rimraf": "^5.0.10"
+  },
+  "files": [
+    "dist"
+  ]
+}

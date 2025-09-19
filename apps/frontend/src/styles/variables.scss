@@ -1,0 +1,156 @@
+// 苹果风格设计系统变量
+
+// 颜色系统
+:root {
+  // 主色调 - 苹果蓝
+  --color-primary: #007aff;
+  --color-primary-light: #5aa3f0;
+  --color-primary-dark: #0051d1;
+
+  // 功能色彩
+  --color-success: #30d158;
+  --color-warning: #ff9f0a;
+  --color-error: #ff3b30;
+  --color-info: #64d2ff;
+
+  // 中性色彩
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-gray-1: #8e8e93;
+  --color-gray-2: #aeaeb2;
+  --color-gray-3: #c7c7cc;
+  --color-gray-4: #d1d1d6;
+  --color-gray-5: #e5e5ea;
+  --color-gray-6: #f2f2f7;
+
+  // 背景色
+  --bg-color-primary: #ffffff;
+  --bg-color-secondary: #f2f2f7;
+  --bg-color-tertiary: #ffffff;
+
+  // 文字颜色
+  --text-color-primary: #000000;
+  --text-color-secondary: #3c3c43;
+  --text-color-tertiary: #3c3c4399;
+  --text-color-quaternary: #3c3c4340;
+
+  // 边框颜色
+  --border-color-primary: #d1d1d6;
+  --border-color-secondary: #e5e5ea;
+
+  // 阴影
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-large: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  // 圆角
+  --border-radius-small: 6px;
+  --border-radius-medium: 8px;
+  --border-radius-large: 12px;
+  --border-radius-xl: 16px;
+
+  // 间距
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  // 字体大小
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+
+  // 行高
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.6;
+
+  // 字重
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  // 过渡动画
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// 暗色主题
+.dark {
+  --bg-color-primary: #000000;
+  --bg-color-secondary: #1c1c1e;
+  --bg-color-tertiary: #2c2c2e;
+
+  --text-color-primary: #ffffff;
+  --text-color-secondary: #ffffff;
+  --text-color-tertiary: #ebebf599;
+  --text-color-quaternary: #ebebf540;
+
+  --border-color-primary: #38383a;
+  --border-color-secondary: #48484a;
+
+  --color-gray-6: #1c1c1e;
+}
+
+// SCSS 变量（兼容性）
+$color-primary: var(--color-primary);
+$color-success: var(--color-success);
+$color-warning: var(--color-warning);
+$color-error: var(--color-error);
+$color-info: var(--color-info);
+
+$bg-color-primary: var(--bg-color-primary);
+$bg-color-secondary: var(--bg-color-secondary);
+$text-color-primary: var(--text-color-primary);
+$text-color-secondary: var(--text-color-secondary);
+
+$border-radius-medium: var(--border-radius-medium);
+$spacing-md: var(--spacing-md);
+$font-size-md: var(--font-size-md);
+
+// 混入
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin card-shadow {
+  box-shadow: var(--shadow-medium);
+  border-radius: var(--border-radius-large);
+  background: var(--bg-color-primary);
+}
+
+@mixin button-reset {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  outline: none;
+}
+
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin smooth-transition($property: all) {
+  transition: #{$property} var(--transition-normal);
+}

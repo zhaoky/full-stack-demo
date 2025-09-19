@@ -1,0 +1,251 @@
+// 全局样式
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--text-color-primary);
+  background-color: var(--bg-color-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-3);
+  border-radius: 3px;
+
+  &:hover {
+    background: var(--color-gray-2);
+  }
+}
+
+// Element Plus 样式覆盖
+.el-button {
+  border-radius: var(--border-radius-medium);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+
+  &.el-button--primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+
+    &:hover {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary-light);
+    }
+
+    &:active {
+      background: var(--color-primary-dark);
+      border-color: var(--color-primary-dark);
+    }
+  }
+}
+
+.el-card {
+  border-radius: var(--border-radius-large);
+  border: 1px solid var(--border-color-secondary);
+  box-shadow: var(--shadow-small);
+
+  .el-card__header {
+    border-bottom: 1px solid var(--border-color-secondary);
+    padding: var(--spacing-lg);
+  }
+
+  .el-card__body {
+    padding: var(--spacing-lg);
+  }
+}
+
+.el-dialog {
+  border-radius: var(--border-radius-large);
+
+  .el-dialog__header {
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-secondary);
+  }
+
+  .el-dialog__body {
+    padding: var(--spacing-lg);
+  }
+
+  .el-dialog__footer {
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+    border-top: 1px solid var(--border-color-secondary);
+  }
+}
+
+.el-form-item {
+  margin-bottom: var(--spacing-lg);
+
+  .el-form-item__label {
+    color: var(--text-color-secondary);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+// .el-input {
+//   .el-input__inner {
+//     border-radius: var(--border-radius-medium);border-radius
+//     border: 1px solid var(--border-color-primary);border
+//     transition: all var(--transition-fast);transition
+
+//     &:focus {
+//       border-color: var(--color-primary);border-color
+//       box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);box-shadow
+//     }
+//   }
+// }
+
+.el-table {
+  border-radius: var(--border-radius-large);
+  overflow: hidden;
+
+  .el-table__header {
+    th {
+      background: var(--bg-color-secondary);
+      border-bottom: 1px solid var(--border-color-secondary);
+      color: var(--text-color-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+
+  .el-table__body {
+    tr {
+      transition: background-color var(--transition-fast);
+
+      &:hover {
+        background: var(--color-gray-6);
+      }
+    }
+
+    td {
+      border-bottom: 1px solid var(--border-color-secondary);
+    }
+  }
+}
+
+.el-pagination {
+  .el-pager li {
+    border-radius: var(--border-radius-small);
+    margin: 0 2px;
+
+    &.is-active {
+      background: var(--color-primary);
+      color: white;
+    }
+  }
+
+  .btn-prev,
+  .btn-next {
+    border-radius: var(--border-radius-small);
+  }
+}
+
+// 工具类
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.text-success {
+  color: var(--color-success) !important;
+}
+
+.text-warning {
+  color: var(--color-warning) !important;
+}
+
+.text-error {
+  color: var(--color-error) !important;
+}
+
+.text-secondary {
+  color: var(--text-color-secondary) !important;
+}
+
+.text-tertiary {
+  color: var(--text-color-tertiary) !important;
+}
+
+.bg-primary {
+  background-color: var(--bg-color-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--bg-color-secondary) !important;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  @include flex-center;
+}
+
+.flex-between {
+  @include flex-between;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.rounded {
+  border-radius: var(--border-radius-medium);
+}
+
+.rounded-lg {
+  border-radius: var(--border-radius-large);
+}
+
+.shadow {
+  box-shadow: var(--shadow-medium);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// 响应式断点
+@media (max-width: 768px) {
+  .el-dialog {
+    width: 90% !important;
+    margin: 5vh auto;
+  }
+
+  .el-table {
+    font-size: var(--font-size-sm);
+  }
+}

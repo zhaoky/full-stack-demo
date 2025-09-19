@@ -1,0 +1,47 @@
+{
+  "name": "full-stack-demo",
+  "version": "1.0.0",
+  "description": "Full-stack TypeScript monorepo with Vue3 frontend and Node.js backend",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "build": "pnpm --filter @shared/* build && pnpm --filter backend build && pnpm --filter frontend build",
+    "start": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"pnpm --filter backend start\" \"pnpm --filter frontend preview\"",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "lint:fix": "pnpm --recursive lint:fix",
+    "type-check": "pnpm --recursive type-check",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "fresh": "pnpm clean && pnpm install",
+    "db:init": "pnpm --filter backend db:init",
+    "db:seed": "pnpm --filter backend db:seed",
+    "db:seed:clear": "pnpm --filter backend db:seed:clear",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "rimraf": "^5.0.10",
+    "typescript": "^5.5.4"
+  },
+  "keywords": [
+    "monorepo",
+    "pnpm",
+    "typescript",
+    "vue3",
+    "nodejs",
+    "express",
+    "fullstack"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
